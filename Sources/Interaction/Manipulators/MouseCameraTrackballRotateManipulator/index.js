@@ -18,7 +18,7 @@ function vtkMouseCameraTrackballRotateManipulator(publicAPI, model) {
   const trans = new Float64Array(16);
   const v2 = new Float64Array(3);
   const centerNeg = new Float64Array(3);
-  // const direction = new Float64Array(3);
+  const direction = new Float64Array(3);
 
   publicAPI.onButtonDown = (interactor, renderer, position) => {
     model.previousPosition = position;
@@ -47,6 +47,7 @@ function vtkMouseCameraTrackballRotateManipulator(publicAPI, model) {
 
     // Azimuth
     const viewUp = camera.getViewUp();
+
     mat4.rotate(
       trans,
       trans,
@@ -72,15 +73,31 @@ function vtkMouseCameraTrackballRotateManipulator(publicAPI, model) {
     // Apply transformation to camera position, focal point, and view up
     vec3.transformMat4(newCamPos, cameraPos, trans);
     vec3.transformMat4(newFp, cameraFp, trans);
-    // direction[0] = viewUp[0] + cameraPos[0];
-    // direction[1] = viewUp[1] + cameraPos[1];
-    // direction[2] = viewUp[2] + cameraPos[2];
-    vec3.transformMat4(newViewUp, viewUp, trans);
+    direction[0] = viewUp[0] + cameraPos[0];
+    direction[1] = viewUp[1] + cameraPos[1];
+    direction[2] = viewUp[2] + cameraPos[2];
+    vec3.transformMat4(newViewUp, direction, trans);
 
     camera.setPosition(newCamPos[0], newCamPos[1], newCamPos[2]);
     camera.setFocalPoint(newFp[0], newFp[1], newFp[2]);
+
+    newViewUp[0] -= newCamPos[0];
+    newViewUp[1] -= newCamPos[1];
+    newViewUp[2] -= newCamPos[2];
+
+    if (model.useWorldUpVec) {
+      vtkMath.subtract(newFp, newCamPos, direction);
+      vtkMath.cross(direction, model.worldUpVec, v2);
+      vtkMath.normalize(v2);
+      vtkMath.subtract(newViewUp, v2, newViewUp);
+      vtkMath.multiplyScalar(newViewUp, vtkMath.dot(newViewUp, v2));
+      vtkMath.normalize(newViewUp);
+    }
+
     camera.setViewUp(newViewUp[0], newViewUp[1], newViewUp[2]);
-    // camera.orthogonalizeViewUp();
+    if (!model.useWorldUpVec) {
+      camera.orthogonalizeViewUp();
+    }
 
     renderer.resetCameraClippingRange();
 
@@ -96,7 +113,11 @@ function vtkMouseCameraTrackballRotateManipulator(publicAPI, model) {
 // Object factory
 // ----------------------------------------------------------------------------
 
-const DEFAULT_VALUES = {};
+const DEFAULT_VALUES = {
+  useWorldUpVec: true,
+  // set WorldUpVector to be z-axis by default
+  worldUpVec: [0, 1, 0],
+};
 
 // ----------------------------------------------------------------------------
 
@@ -107,6 +128,10 @@ export function extend(publicAPI, model, initialValues = {}) {
   macro.obj(publicAPI, model);
   vtkCompositeMouseManipulator.extend(publicAPI, model, initialValues);
   vtkCompositeCameraManipulator.extend(publicAPI, model, initialValues);
+
+  // Create get-set macro
+  macro.setGet(publicAPI, model, ['useWorldUpVec']);
+  macro.setGetArray(publicAPI, model, ['worldUpVec'], 3);
 
   // Object specific methods
   vtkMouseCameraTrackballRotateManipulator(publicAPI, model);
