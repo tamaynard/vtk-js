@@ -37,9 +37,6 @@ function vtkMouseCameraTrackballRotateManipulator(publicAPI, model) {
 
     const { center, rotationFactor } = model;
 
-    // Translate to center
-    mat4.translate(trans, trans, center);
-
     const dx = model.previousPosition.x - position.x;
     const dy = model.previousPosition.y - position.y;
 
@@ -47,13 +44,36 @@ function vtkMouseCameraTrackballRotateManipulator(publicAPI, model) {
 
     // Azimuth
     const viewUp = camera.getViewUp();
+    if (model.useWorldUpVec) {
+      const centerOfRotation = new Float64Array(3);
+      vec3.copy(centerOfRotation, model.worldUpVec);
+      vtkMath.multiplyScalar(
+        centerOfRotation,
+        vtkMath.dot(cameraPos, model.worldUpVec) /
+          vtkMath.dot(model.worldUpVec, model.worldUpVec)
+      );
+      mat4.translate(trans, trans, centerOfRotation);
+      mat4.rotate(
+        trans,
+        trans,
+        vtkMath.radiansFromDegrees(((360.0 * dx) / size[0]) * rotationFactor),
+        model.worldUpVec
+      );
 
-    mat4.rotate(
-      trans,
-      trans,
-      vtkMath.radiansFromDegrees(((360.0 * dx) / size[0]) * rotationFactor),
-      viewUp
-    );
+      centerNeg[0] = -centerOfRotation[0];
+      centerNeg[1] = -centerOfRotation[1];
+      centerNeg[2] = -centerOfRotation[2];
+      mat4.translate(trans, trans, centerNeg);
+      mat4.translate(trans, trans, center);
+    } else {
+      mat4.translate(trans, trans, center);
+      mat4.rotate(
+        trans,
+        trans,
+        vtkMath.radiansFromDegrees(((360.0 * dx) / size[0]) * rotationFactor),
+        viewUp
+      );
+    }
 
     // Elevation
     vtkMath.cross(camera.getDirectionOfProjection(), viewUp, v2);
@@ -80,24 +100,12 @@ function vtkMouseCameraTrackballRotateManipulator(publicAPI, model) {
 
     camera.setPosition(newCamPos[0], newCamPos[1], newCamPos[2]);
     camera.setFocalPoint(newFp[0], newFp[1], newFp[2]);
-
-    newViewUp[0] -= newCamPos[0];
-    newViewUp[1] -= newCamPos[1];
-    newViewUp[2] -= newCamPos[2];
-
-    if (model.useWorldUpVec) {
-      vtkMath.subtract(newFp, newCamPos, direction);
-      vtkMath.cross(direction, model.worldUpVec, v2);
-      vtkMath.normalize(v2);
-      vtkMath.subtract(newViewUp, v2, newViewUp);
-      vtkMath.multiplyScalar(newViewUp, vtkMath.dot(newViewUp, v2));
-      vtkMath.normalize(newViewUp);
-    }
-
-    camera.setViewUp(newViewUp[0], newViewUp[1], newViewUp[2]);
-    if (!model.useWorldUpVec) {
-      camera.orthogonalizeViewUp();
-    }
+    camera.setViewUp(
+      newViewUp[0] - newCamPos[0],
+      newViewUp[1] - newCamPos[1],
+      newViewUp[2] - newCamPos[2]
+    );
+    camera.orthogonalizeViewUp();
 
     renderer.resetCameraClippingRange();
 
