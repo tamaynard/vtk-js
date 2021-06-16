@@ -7,7 +7,7 @@ import macro from 'vtk.js/Sources/macro';
 import vtkFullScreenRenderWindow from 'vtk.js/Sources/Rendering/Misc/FullScreenRenderWindow';
 
 import vtkActor from 'vtk.js/Sources/Rendering/Core/Actor';
-import vtkCubeSource from 'vtk.js/Sources/Filters/Sources/CubeSource';
+import vtkConeSource from 'vtk.js/Sources/Filters/Sources/ConeSource';
 import vtkMapper from 'vtk.js/Sources/Rendering/Core/Mapper';
 import vtkInteractorStyleManipulator from 'vtk.js/Sources/Interaction/Style/InteractorStyleManipulator';
 
@@ -43,13 +43,9 @@ fullScreenRenderer.getInteractor().setInteractorStyle(interactorStyle);
 // Source, actor and mapper
 // ----------------------------------------------------------------------------
 
-const cubeSource = vtkCubeSource.newInstance({
-  xLength: 5,
-  yLength: 5,
-  zLength: 5,
-});
+const coneSource = vtkConeSource.newInstance({ height: 1.0 });
 const mapper = vtkMapper.newInstance();
-mapper.setInputConnection(cubeSource.getOutputPort());
+mapper.setInputConnection(coneSource.getOutputPort());
 
 const actor = vtkActor.newInstance();
 actor.setMapper(mapper);
@@ -153,7 +149,7 @@ reassignManipulators();
 // modify objects in your browser's developer console:
 // -----------------------------------------------------------
 
-global.source = cubeSource;
+global.source = coneSource;
 global.mapper = mapper;
 global.actor = actor;
 global.renderer = renderer;
