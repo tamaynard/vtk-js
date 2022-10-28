@@ -6,6 +6,7 @@ import vtkCubeSource from './CubeSource';
 import vtkCursor3D from './Cursor3D';
 import vtkCylinderSource from './CylinderSource';
 import vtkImageGridSource from './ImageGridSource';
+import vtkLabelSource from './LabelSource';
 import vtkLineSource from './LineSource';
 import vtkPlaneSource from './PlaneSource';
 import vtkPointSource from './PointSource';
@@ -22,6 +23,7 @@ export default {
   vtkCursor3D,
   vtkCylinderSource,
   vtkImageGridSource,
+  vtkLabelSource,
   vtkLineSource,
   vtkPlaneSource,
   vtkPointSource,
