@@ -41,49 +41,41 @@ function vtkLabelSource(publicAPI, model) {
     tmContext.clearRect(0, 0, width, height);
 
     // draw text onto the texture
-    let tcoords = [
-      0.0,
-      0.0,
-      1.0,
-      0.0,
-      1.0,
-      height / (height + 1.0),
-      0.0,
-      height / (height + 1.0),
-    ];
     tmContext.fillText(model.text, 1, height);
     tmTexture.setCanvas(tmCanvas);
     tmTexture.modified();
 
-    // Points
-    const points = macro.newTypedArray(model.pointType, model.resolution * 3);
+    const tcoords = [
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      1.0,
+      1.0,
+      0.0,
+      1.0,
+    ];
+    const points = [
+      0.0, 0.0, 0.0,
+      1.0, 0.0, 0.0,
+      1.0, 1.0, 0.0,
+      0.0, 1.0, 0.0,
+    ];
+    const polys = [
+      3, 0, 1, 2,
+      3, 0, 2, 3,
+    ];
 
-    // Lines/cells
-    // [# of points in line, vert_index_0, vert_index_1, ..., vert_index_0]
-    const edges = new Uint32Array(model.resolution + 2);
-    edges[0] = model.resolution + 1;
-
-    // generate polydata
-    const angle = (2.0 * Math.PI) / model.resolution;
-    for (let i = 0; i < model.resolution; i++) {
-      const x = model.center[0];
-      const y = model.radius * Math.cos(i * angle) + model.center[1];
-      const z = model.radius * Math.sin(i * angle) + model.center[2];
-      points.set([x, y, z], i * 3);
-      edges[i + 1] = i;
-    }
-
-    // connect endpoints
-    edges[edges.length - 1] = edges[1];
+    const tcoordDA = vtkDataArray.newInstance({
+      numberOfComponents: 2,
+      values: tcoords,
+      name: 'TextureCoordinates',
+    });
 
     textPolyData = vtkPolyData.newInstance();
+    textPolyData.getPointData().setTCoords(tcoordDA);
     textPolyData.getPoints().setData(points, 3);
-    if (model.lines) {
-      textPolyData.getLines().setData(edges, 1);
-    }
-    if (model.face) {
-      textPolyData.getPolys().setData(edges, 1);
-    }
+    textPolyData.getPolys().setData(polys, 1);
 
     // translate an eventual center different to [0, 0, 0] to ensure rotation is correct
     vtkMatrixBuilder

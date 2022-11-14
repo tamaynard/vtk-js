@@ -5,7 +5,7 @@ import 'vtk.js/Sources/Rendering/Profiles/Geometry';
 
 import vtkFullScreenRenderWindow from 'vtk.js/Sources/Rendering/Misc/FullScreenRenderWindow';
 import vtkActor from 'vtk.js/Sources/Rendering/Core/Actor';
-import vtkCircleSource from 'vtk.js/Sources/Filters/Sources/CircleSource';
+import vtkLabelSource from 'vtk.js/Sources/Filters/Sources/LabelSource';
 import vtkMapper from 'vtk.js/Sources/Rendering/Core/Mapper';
 
 import controlPanel from './controlPanel.html';
@@ -24,22 +24,22 @@ const renderWindow = fullScreenRenderer.getRenderWindow();
 // Example code
 // ----------------------------------------------------------------------------
 
-function createCirclePipeline() {
-  const cylinderSource = vtkCircleSource.newInstance();
+function createLabelPipeline() {
+  const labelSource = vtkLabelSource.newInstance();
   const actor = vtkActor.newInstance();
   const mapper = vtkMapper.newInstance();
 
-  cylinderSource.setLines(true);
-  cylinderSource.setFace(true);
+  labelSource.setLines(true);
+  labelSource.setFace(true);
 
   actor.setMapper(mapper);
-  mapper.setInputConnection(cylinderSource.getOutputPort());
+  mapper.setInputConnection(labelSource.getOutputPort());
 
   renderer.addActor(actor);
-  return { cylinderSource, mapper, actor };
+  return { labelSource, mapper, actor };
 }
 
-const pipelines = [createCirclePipeline()];
+const pipelines = [createLabelPipeline()];
 pipelines[0].actor.getProperty().setColor(1, 0, 0);
 
 renderer.resetCamera();
@@ -51,34 +51,31 @@ renderWindow.render();
 
 fullScreenRenderer.addController(controlPanel);
 
-['radius', 'resolution'].forEach((propertyName) => {
+['text'].forEach((propertyName) => {
   document.querySelector(`.${propertyName}`).addEventListener('input', (e) => {
-    const value = Number(e.target.value);
-    pipelines[0].cylinderSource.set({ [propertyName]: value });
-    renderWindow.render();
-  });
-});
-
-['lines', 'face'].forEach((propertyName) => {
-  document.querySelector(`.${propertyName}`).addEventListener('input', (e) => {
-    pipelines[0].cylinderSource.set({ [propertyName]: e.target.checked });
+    const value e.target.value;
+    pipelines[0].labelSource.set({ [propertyName]: value });
     renderWindow.render();
   });
 });
 
 const centerElems = document.querySelectorAll('.center');
+const dirElems = document.querySelectorAll('.dir');
 
-function updateTransformedCircle() {
+function updateTransformedLabel() {
   const center = [0, 0, 0];
+  const direction = [1, 0, 0];
   for (let i = 0; i < 3; i++) {
     center[Number(centerElems[i].dataset.index)] = Number(centerElems[i].value);
+    direction[Number(dirElems[i].dataset.index)] = Number(dirElems[i].value);
   }
-  pipelines[0].cylinderSource.set({ center });
+  pipelines[0].labelSource.set({ center });
+  pipelines[0].labelSource.set({ direction });
   renderWindow.render();
 }
 
 for (let i = 0; i < 3; i++) {
-  centerElems[i].addEventListener('input', updateTransformedCircle);
+  centerElems[i].addEventListener('input', updateTransformedLabel);
 }
 
 // -----------------------------------------------------------
